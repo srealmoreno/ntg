@@ -1,5 +1,5 @@
 #!/bin/bash
-
+trap exit 1 SIGINT
 echo -e "\033[01;34m"
 echo "███╗   ██╗████████╗ ██████╗ "
 echo "████╗  ██║╚══██╔══╝██╔════╝ "
@@ -37,8 +37,10 @@ if [[ $# == 0 ]]; then
 
     rm /tmp/ntg_init.bashrc
 else
-    echo -e "\033[01;31m»\033[0mntg all $1 --output .\n\t"
-    ntg all "$1" -o .
+    cd ${1%/*}
+    name="${1##*/}"
+    echo -e "\033[01;31m»\033[0mntg all $name --output .\n\t"
+    ntg all "$name" -o .
     if [[ "$?" != "0" ]]; then
         echo -e "\033[01;31m"
         read -srn1 -p "x Failed! - Press any key to exit"
