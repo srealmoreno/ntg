@@ -1,0 +1,51 @@
+#!/bin/bash
+
+echo -e "\033[01;34m"
+echo "███╗   ██╗████████╗ ██████╗ "
+echo "████╗  ██║╚══██╔══╝██╔════╝ "
+echo "██╔██╗ ██║   ██║   ██║  ███╗"
+echo "██║╚██╗██║   ██║   ██║   ██║"
+echo "██║ ╚████║   ██║   ╚██████╔╝"
+echo "╚═╝  ╚═══╝   ╚═╝    ╚═════╝ "
+echo -e "\033[0m"
+
+if [[ $# == 0 ]]; then
+
+    echo -e "\033[01;32m"
+    ntg --help
+    echo -e "\033[0m"
+
+    echo '
+    export PS1="»"
+    export HISTFILE=~/.ntg_history
+    source "/etc/bash_completion"
+    bind "\"\e[0n\": \"ntg \""
+
+    _auto_complete(){
+        if [[ "$?" == "0" ]]; then
+            export PS1="\[\033[01;32m\]»\[\033[00m\]"
+        else
+            export PS1="\[\033[01;31m\]»\[\033[00m\]"
+        fi
+        printf "\e[5n"
+    }
+
+    PROMPT_COMMAND=_auto_complete
+    ' >/tmp/ntg_init.bashrc
+
+    bash --noprofile --rcfile /tmp/ntg_init.bashrc
+
+    rm /tmp/ntg_init.bashrc
+else
+    echo -e "\033[01;31m»\033[0mntg all $1 --output .\n\t"
+    ntg all "$1" -o .
+    if [[ "$?" != "0" ]]; then
+        echo -e "\033[01;31m"
+        read -srn1 -p "x Failed! - Press any key to exit"
+    else
+        for ((i = 10; i > 0; i--)); do
+            echo -en "\rPress any key to exit $i "
+            read -srn1 -t1 && break
+        done
+    fi
+fi

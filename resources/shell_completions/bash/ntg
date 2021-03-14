@@ -1,0 +1,177 @@
+_ntg()
+{
+    local cur prev words cword
+    _init_completion || return
+ 
+    local python_version=$(python3 --version 2>/dev/null | grep -oP ' \K.*' | cut -f1,2 -d '.')
+    local gns3_version=$(grep -oP '__version__ = \K.*' "/usr/share/gns3/gns3-gui/lib/python$python_version/site-packages/gns3/version.py" 2>/dev/null | sed 's/"//g' | cut -f1,2 -d '.')
+    local sourceconfig=~/".config/GNS3/$gns3_version/gns3_controller.conf" command=${words[1]}
+
+    local GENERIC_OPTIONS='
+        -h --help
+    '
+
+    # see if the user selected a command already
+    local COMMANDS=(
+        "all" 
+        "topology" 
+        "config" 
+        )
+
+    local matches=" (-h|--help|-v|--version) " 
+    
+    if [[ ${words[@]} =~ $matches ]]; then
+        return 0
+    fi
+
+    # supported options per command
+    if [[ "$cur" == -* ]] && [[ -n $command ]]; then
+        case $command in            
+            all|topology)
+                
+                local reply=''
+                
+                local matches=" -(i|-image) "
+                if [[ ! ${words[@]} =~ $matches ]]; then
+                    reply="-i --image"
+                fi
+
+                local matches=" -(n|-name) "
+                if [[ ! ${words[@]} =~ $matches ]]; then
+                    reply="$reply -n --name"
+                fi
+
+                local matches=" -(t|-template|r|-read) "
+                if [[ ! ${words[@]} =~ $matches ]]; then
+                    reply="$reply -t --template"
+                fi
+                
+                local matches=" -(r|-read|t|-template) "
+                if [[ ! ${words[@]} =~ $matches ]]; then
+                    reply="$reply -r --read"
+                fi
+
+                local matches=" -(o|-output) "
+                if [[ ! ${words[@]} =~ $matches ]]; then
+                    reply="$reply -o --output"
+                fi
+
+                if [[ $cword == 2 ]]; then
+                    reply="$reply $GENERIC_OPTIONS"
+                fi
+
+                COMPREPLY=( $( compgen -W '
+                  $reply' -- "$cur" ) )
+                return 0
+                ;;
+
+            config)
+                
+                if [[ $cword == 2 ]]; then
+                    COMPREPLY=( $( compgen -W '
+                    '"$GENERIC_OPTIONS" -- "$cur" ) )
+                fi
+                return 0
+                ;; 
+        esac
+    fi
+    
+    # specific options of coomands arguments
+    local matches="\b(all|topology)\b"
+
+    if [[ -n $prev ]] && [[ -n $command ]] && [[ $command =~ $matches ]]; then
+        case $prev in   
+            --image|-!(-*)i)
+
+                local i read_config args_gns3_controller matches="^-(r|-read)$"
+
+                for (( i=1; i < ${#words[@]}-1; i++ )); do    
+                    if [[ ${words[i]} =~ $matches ]]; then
+                        args_gns3_controller=${words[$((i+1))]}
+                        break
+                    fi
+                done
+                
+                if [[ -n $args_gns3_controller ]]; then
+                    read_config=${args_gns3_controller//\~/$HOME}
+                else
+                    read_config=$sourceconfig
+                fi
+    
+                local images=$(jq -r '.templates[] | select(.template_type=="docker") | .image' $read_config  2>/dev/null |\
+                    sed -r '/^.+?\/*.+?:.+$/!d')
+
+                if [[ -n $images ]] && [[ $images != "null" ]]; then
+                    COMPREPLY=( $( compgen -W '
+                        $images' -- "$cur" ) )
+                fi
+                return 0
+                ;;
+        
+            --name|--read|-!(-*)[nr])
+                _filedir
+                return 0
+                ;;
+
+            --template|-!(-*)t)
+    
+               local template_id=$(jq -r '.templates[] | select(.template_type=="docker") | .template_id' $sourceconfig  2>/dev/null |\
+                    sed -r '/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/!d'  )
+                
+                if [[ -n $template_id ]] && [[ $template_id != "null" ]]; then
+                    COMPREPLY=( $( compgen -W '
+                        $template_id' -- "$cur" ) )
+
+                fi
+                 
+                return 0
+                ;;
+            
+            -o|--output)
+                _filedir -d
+            return 0
+            ;;
+        esac
+    fi
+
+
+    # specific command arguments
+    if [[ -n $command ]]; then
+        case $command in
+            all|topology)
+                if [[ $((cword % 2)) == 0 ]]; then
+                    _filedir "nkp"
+                fi 
+       
+                return 0
+                ;;
+            config)
+                
+                if [[ $cword == 2 ]]; then
+                    _filedir "nkp"
+                fi
+                
+                if [[ $cword == 3  ]]; then
+                    _filedir "gns3"
+                fi
+                
+                return 0
+                ;;
+        esac
+        
+    fi
+
+    local matches="\b(all|topology|config)\b|-"
+    # no command yet, show what commands we have
+    if [[ "$cur" != -* ]] && [[ $cword == 1 ]]; then
+        COMPREPLY=( $( compgen -W '${COMMANDS[@]}' -- "$cur" ) )
+    elif [[ $command =~ $matches ]]; then
+        COMPREPLY=( $( compgen -W '-v --version${GENERIC_OPTIONS}' -- "$cur" ) )
+    fi
+
+    return 0
+} &&
+complete -F _ntg ntg
+
+# ex: ts=4 sw=5 et filetype=sh
+

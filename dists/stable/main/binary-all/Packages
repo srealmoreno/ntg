@@ -1,0 +1,21 @@
+Package: ntg
+Architecture: all
+Version: 1.0.0~all
+Priority: optional
+Section: python
+Maintainer: Salvador Real <salvadorreal77@gmail.com>
+Installed-Size: 108
+Depends: python3, python3-rstr, jq, gns3-gui, gns3-server
+Filename: ./dists/stable/pool/stable/all/ntg_1.0.0~all.deb
+Size: 19204
+MD5sum: 052c470c4967936fe2110a186bdc8d89
+SHA1: 2c577ca157c253a124bf5d90f2175460d6b89a3d
+SHA256: 6d4f8edbbfe6b8636856edea80a88227ca8d730bd418d6f7d8b3752eeb9b9c12
+SHA512: fe2ba2dee655f6aba8457739f8f73cf69411c6565c3f43cea9aebe39f6fdda31566e721a7b9bb4d3048d3858989cf1bf4cacb980fb37c2dcd80ca73d448bd029
+Homepage: https://srealmoreno.github.io/ntg/
+Description: Convert Topology Netgui to GNS3 with Docker
+ With this script you can convert netgui projects (.nkp) to
+ GNS3 projects (.gns3) with a docker image With this tool you
+ can get over the old and obsolete netgui. GNS3 with docker 
+ is more stable, more optimal, lighter, faster and more modern.
+

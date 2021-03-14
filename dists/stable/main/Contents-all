@@ -1,0 +1,9 @@
+usr/bin/_ntg_launcher					    ntg
+usr/bin/ntg						    ntg
+usr/share/applications/ntg.desktop			    ntg
+usr/share/bash-completion/completions/ntg		    ntg
+usr/share/doc/ntg/changelog.gz				    ntg
+usr/share/doc/ntg/copyright				    ntg
+usr/share/man/man1/_ntg_launcher.1.gz			    ntg
+usr/share/man/man1/ntg.1.gz				    ntg
+usr/share/zsh/functions/Completion/Debian/_ntg		    ntg

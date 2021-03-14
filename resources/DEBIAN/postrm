@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+case $1 in
+    purge)
+        rm -f /home/*/.ntg_history /root/.ntg_history
+        ;;
+esac
