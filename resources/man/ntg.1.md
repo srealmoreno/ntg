@@ -1,4 +1,4 @@
-% ntg(1) ntg User Manuals
+% NTG(1) ntg User Manuals
 % Srealmoreno - Salvador Real
 % October 30, 2020
 
@@ -37,6 +37,11 @@ Convert full Netgui projects to GNS3 projects with Docker, using a container app
 
 ## OPTIONALS
 
+**-f**, **\--force**
+
+> Force conversion of the project.  
+> If the output project already exists, it will be replaced
+
 **-i** DOCKER_IMAGE, **\--image** DOCKER_IMAGE
 
 > Specifies the name of the docker image.  
@@ -48,11 +53,10 @@ Convert full Netgui projects to GNS3 projects with Docker, using a container app
 > Specifies the name that the output project will have.  
 > If not specified, the name of the Netgui project will be taken.
 
-**-t** TEMPLATE_ID, **\--template** TEMPLATE_ID
+**-o** OUTPUT_FOLDER, **\--output** OUTPUT_FOLDER
 
-> Specifies the ID of the Docker template.  
-> Each GNS3 node comes from a template, this template has an ID.  
-> If not specified, the template ID will be searched in file "gns3_controller"
+> Specifies the folder where the output project will be saved.  
+> default: ~/GNS3/projects/
 
 **-r** GNS3_CONTROLLER, **\--read** GNS3_CONTROLLER
 
@@ -60,10 +64,11 @@ Convert full Netgui projects to GNS3 projects with Docker, using a container app
 > The template ID will be searched here in case it is not specified (-t)  
 > default: ~/.config/GNS3/GNS3_VERSION/gns3_controller.conf
 
-**-o** OUTPUT_FOLDER, **\--output** OUTPUT_FOLDER
+**-t** TEMPLATE_ID, **\--template** TEMPLATE_ID
 
-> Specifies the folder where the output project will be saved.  
-> default: ~/GNS3/projects/
+> Specifies the ID of the Docker template.  
+> Each GNS3 node comes from a template, this template has an ID.  
+> If not specified, the template ID will be searched in file "gns3_controller"
 
 **-h**, **\--help**
 
@@ -206,23 +211,23 @@ Points to consider:
 >
 > From:
 >
-> > 81 # activate eth interfaces  
-> > 82 sed -n 's/^ \_\(eth[0-9]\_\):.\*/\1/p' < /proc/net/dev | while read dev; do  
-> > 83 ip link set dev \$dev up  
-> > 84 done  
-> > 85  
-> > 86 # configure network interfaces  
-> > 87 ifup -a -f
+> > 81│ # activate eth interfaces  
+> > 82│ sed -n 's/^ \_\(eth[0-9]\_\):.\*/\1/p' < /proc/net/dev | while read dev; do  
+> > 83│ ip link set dev \$dev up  
+> > 84│ done  
+> > 85│  
+> > 86│ # configure network interfaces  
+> > 87│ ifup -a -f
 >
 > To:
 >
-> > 81 # activate eth interfaces  
-> > 82 #sed -n 's/^ \_\(eth[0-9]\_\):.\*/\1/p' < /proc/net/dev | while read dev; do  
-> > 83 # ip link set dev \$dev up  
-> > 84 #done  
-> > 85 #  
-> > 86 # configure network interfaces  
-> > 87 #ifup -a -f
+> > 81│ # activate eth interfaces  
+> > 82│ #sed -n 's/^ \_\(eth[0-9]\_\):.\*/\1/p' < /proc/net/dev | while read dev; do  
+> > 83│ # ip link set dev \$dev up  
+> > 84│ #done  
+> > 85│ #  
+> > 86│ # configure network interfaces  
+> > 87│ #ifup -a -f
 
 Taking these points into account, the initialization script must comply with the following parameters:
 

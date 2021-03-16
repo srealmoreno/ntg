@@ -1,3 +1,4 @@
+#!/bin/bash
 #########################################################################
 #
 # Copyright (C) 2020 Salvador Real.
@@ -33,32 +34,51 @@
 # the original file, create a symbolic link and run sysctl -p after the routine
 # the "hosts" file contains only IPv6 as GNS3 does not support IPv6 in
 # "additional hosts", your routine is to add the IPv6 in the original file
+
+blackListDir=~/"blackListDir"
+preventCache="/tmp/.initialized.lock"
 routines() {
     local action=""
     local action_before=""
     local action_after=""
     local verbose="True"
 
-    case "$1" in
-    hosts)
+    local just_once="False"
+    # If the node is rebooted, GNS3 keeps a cache of some files. (This cache is freed when the entire project is closed)
+    # If you want them to strictly only run the first time it is run start the node set this variable to true
+    # For example with the '/etc/hosts' file it should only be executed strictly once since GNS3 caches its state
 
-        if [[ -n $IPv6_Hosts ]]; then
-            action="append"
-            unset IPv6_Hosts
-        else
-            action="nothing"
-        fi
+    local original="${1/$blackListDir/}"
+    local originalFile="${original##*/}"
+    local originalDir="${original%/*}"
+
+    case "$original" in
+    /etc/hosts)
+        just_once="True"
+
+        action_before="echo '# IPV6_EXTRA_HOSTS_START' >> /etc/hosts"
+        action="append"
+        action_after="echo '# IPV6_EXTRA_HOSTS_END' >> /etc/hosts"
+
+        #if [[ -n $IPv6_Hosts ]]; then
+        #    action="append"
+        #    unset IPv6_Hosts
+        #else
+        #    action="nothing"
+        #fi
         ;;
 
-    sysctl.conf)
+    /etc/sysctl.conf)
+        action="link"
+        action_after="sysctl -p"
 
-        if [[ -n $sysctl_conf ]]; then
-            action="link"
-            unset sysctl_conf
-            action_after="sysctl -p"
-        else
-            action="nothing"
-        fi
+        #if [[ -n $sysctl_conf ]]; then
+        #    action="link"
+        #    unset sysctl_conf
+        #    action_after="sysctl -p"
+        #else
+        #    action="nothing"
+        #fi
 
         ;;
     *)
@@ -66,43 +86,49 @@ routines() {
         ;;
     esac
 
+    if [ "$just_once" == "True" ] && [ -e "$preventCache" ]; then
+        return
+    fi
+
+    mkdir -p "$originalDir"
+
     if [[ -n $action_before ]]; then
         if [ "$verbose" == "False" ]; then
-            $action_before
+            echo "$action_before" | bash
         else
-            $action_before >/dev/null 2>/dev/null
+            echo "$action_before" | bash >/dev/null 2>&1
         fi
     fi
 
     case $action in
     link)
         if [ "$verbose" == "False" ]; then
-            rm -rf /etc/"$1"
-            ln -s ~/.etc/"$1" /etc/
+            rm -f "$original"
+            ln -s "$1" "$original"
         else
-            rm -rf /etc/"$1" >/dev/null 2>/dev/null
-            ln -s ~/.etc/"$1" /etc/ >/dev/null 2>/dev/null
+            rm -f "$original" >/dev/null 2>&1
+            ln -s "$1" "$original" /etc/ >/dev/null 2>&1
         fi
         ;;
     append)
         if [ "$verbose" == "False" ]; then
-            cat ~/.etc/"$1" >>/etc/"$1"
+            cat "$1" >>"$original"
         else
-            cat ~/.etc/"$1" >>/etc/"$1" 2>/dev/null
+            cat "$1" >>"$original" 2>/dev/null
         fi
         ;;
     esac
 
     if [[ -n $action_after ]]; then
         if [ "$verbose" == "False" ]; then
-            $action_after
+            echo "$action_after" | bash
         else
-            $action_after >/dev/null 2>/dev/null
+            echo "$action_after" | bash >/dev/null 2>&1
         fi
     fi
 }
 
-if [[ ! -n $initialized ]]; then
+if [[ ! -n $INITIALIZED ]]; then
     # GNS3 has a script that initializes the network interfaces but it is only
     # compatible with IPv4, it can also have errors if you execute any
     # routine ("pre-up" "post-up" "down" "pre-down" "post-down", "down")
@@ -110,16 +136,20 @@ if [[ ! -n $initialized ]]; then
     # The best thing would be to comment on the GNS3 code lines that
     # initialize the interfaces but just in case, with this I free them.
     ls /sys/class/net/ | while read dev; do
-        grep -qP '^\s*auto\s+'$dev /etc/network/interfaces 2>/dev/null && ifdown $dev >/dev/null 2>/dev/null
+        #grep -qP '^\s*auto\s+'$dev /etc/network/interfaces 2>/dev/null && ifdown $dev >/dev/null 2>&1
+        ifdown $dev >/dev/null 2>&1
         ip addr flush $dev 2>/dev/null
-        ip link set $dev down >/dev/null 2>/dev/null
+        ip link set $dev down >/dev/null 2>&1
     done
 
-    if [ -d ~/.etc ]; then
-        ls -a ~/.etc/ | while read file; do
-            [[ $file =~ ^\.{1,2}$ ]] && continue
+    if [ -d ~/blackListDir ]; then
+        find ~/blackListDir -type f | while read -r file; do
             routines "$file"
         done
+        if [ ! -e "$preventCache" ]; then
+            sed  -i "1i #\tFile generated by initialization scripts\n# Don't edit this file manually if you want the changes to be persistent.\n# How to add hosts:\n#  IPv4: add it in 'Extra Hosts' found in the advanced node settings in GNS3\n#  IPv6: add it in '/root/blackListDir/etc/hosts' (if the file or folder does not exist, create them)" /etc/hosts
+            mkfifo /tmp/.initialized.lock
+        fi
     fi
 
     # Following the netgui standard with the initialization file,
@@ -139,15 +169,17 @@ if [[ ! -n $initialized ]]; then
         fi
     done
 
-    # If the interface "lo" has not yet been initialized, it starts
+    # If the interface "lo" has not yet been INITIALIZED, it starts
     if [ $(cat /sys/class/net/lo/operstate) == "down" ]; then
         ip link set lo up
     fi
 
-    export initialized="True"
+    export INITIALIZED="True"
 fi
+
 # The owner and group of persistent volumes are changed recursively.
 # This is to be able to accecss the folders on the host OS at runtime
 if [[ -n $GNS3_VOLUMES ]]; then
     sed 's/:/ /g' <<<$GNS3_VOLUMES | xargs chown -R 1000:1000 2>/dev/null
 fi
+# ex: ts=4 sw=5 et filetype=sh

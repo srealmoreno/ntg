@@ -1,17 +1,17 @@
 Package: ntg
 Architecture: all
-Version: 1.0.0~all1
+Version: 1.0.0~all
 Priority: optional
 Section: python
 Maintainer: Salvador Real <salvadorreal77@gmail.com>
-Installed-Size: 108
+Installed-Size: 176
 Depends: python3, python3-rstr, jq, gns3-gui, gns3-server
-Filename: ./dists/stable/pool/stable/all/ntg_1.0.0~all1.deb
-Size: 19228
-MD5sum: 18c250cfaee681a8ce2e26b0adedea70
-SHA1: bd147634d11e57f69d6825706a152287ec5f504e
-SHA256: 2efd97f0c6df83a11e1dbcea9968506f99d62200e169d70ce952bae74f5caeca
-SHA512: 23988f10e82ed5da959cc3c09018dafc32e01491a7df39f2cfdbcc389259c8dfdadc72902decb232b69b6ecbc732882b7c9d9c32cfe8420b701ce5b8ca9b52d6
+Filename: ./dists/stable/pool/stable/all/ntg_1.0.0~all_all.deb
+Size: 19444
+MD5sum: a2d2f1f4aa33ed9f4199d8a84c3d4733
+SHA1: 758384a5fdb159c6f0ca3cf37a36570651dafe9b
+SHA256: 7b18b282506e02c1eeb99c9c10525d9f5feb2b5903232ca1e13e83805a66506e
+SHA512: 2c2efa7d3c76ff0c18634a9546663f7ad55fef18683b56f8d9d8a5ff75cd30efeabef70127efb5a7a615180b11b75eb83defee99d87b0fb6f030cb499e85eca2
 Homepage: https://srealmoreno.github.io/ntg/
 Description: Convert Topology Netgui to GNS3 with Docker
  With this script you can convert netgui projects (.nkp) to

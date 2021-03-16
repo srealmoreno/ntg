@@ -33,7 +33,7 @@ from json import dumps, load
 # dumps to format a string in json format, load to load the content of a file in json format
 from math import sqrt, atan, sin, cos
 # sqrt for square root, atan is inverse tangent, sin is sine, cos is cosine
-#from sys import version as python_version        
+#from sys import version as python_version
 # To get the current version of python
 # This way of getting the main GNS3 file is obsolete.
 # Since if python is in a different version than GNS3 this will give an error.
@@ -44,7 +44,7 @@ from os import path, listdir, makedirs, symlink, unlink
 # makedirs make directory by recursive, similar to mkdir -p in linux
 # symlink make symbolic link
 # unlink remove symbolic link
-from re import findall, IGNORECASE, MULTILINE
+from re import DEBUG, findall, IGNORECASE, MULTILINE
 # findall is a method to search with regular expressions in a text
 # IGNORECASE and MULTILINE are flags passed to the findall method
 # IGNORECASE case insensitive search
@@ -235,10 +235,9 @@ class GNS3Project:
         if Node_out.type == "docker":
             self.project["topology"]["nodes"][Node_out.index]["properties"]["adapters"] += 1
         else:
-            self.project["topology"]["nodes"][Node_out.index]["properties"]["ports_mapping"].append({
-                "name": "eth" + str(Node_out.adapters),
-                "port_number": Node_out.adapters
-            })
+            self.project["topology"]["nodes"][Node_out.index]["properties"]["ports_mapping"].append({"name": "eth" + str(Node_out.adapters),
+                                                                                                     "port_number": Node_out.adapters
+                                                                                                     })
 
         Node_out.adapters += 1
 
@@ -254,14 +253,14 @@ def copy_subfolder(src: str, dst: str, len_absolute_dir=0, current_depeth=0):
      Directories that do not contains any files will be skipped.
 
      For example:
-        /etc/network/interfaces
+      1: /etc/network/interfaces
                                    ╭─── File
                  /etc/network/ interfaces
            Directory ──╯
            Since the directory contains a file, it will be copied and
            added to persistent directories (extra volumes)
 
-        /var/www/
+      2: /var/www/
                              ╭─── No File
                    /var/www/
           Directory ──╯
@@ -408,11 +407,12 @@ def get_etc_hosts(file: str, IPv4: bool = True, IPv6: bool = False):
     return hosts if hosts != '' else None
 
 
-def convert_topology(pjNetgui: str, pjOutput: str, nameOutput: str,  imgDocker: str, template_id: str, cfgRead: str, netgui_file: str, gns3_version: str):
+def convert_topology(pjNetgui: str, pjOutput: str, nameOutput: str, force: bool, imgDocker: str, template_id: str, cfgRead: str, netgui_file: str, gns3_version: str):
 
     if not pjOutput.endswith("/"):
         pjOutput += "/"
-    if path.exists(pjOutput+nameOutput):
+
+    if not force and path.exists(pjOutput+nameOutput):
         if not (path.isdir(pjOutput+nameOutput) and not listdir(pjOutput+nameOutput)):
             print(pjOutput+nameOutput +
                   "\033[91m a file or directory already exists\033[0m")
@@ -651,14 +651,13 @@ def convert_files(pjNetgui: str, pjOutput: str, netgui_file: str, nodes: dict = 
 
             node_hosts_ipv6 = get_etc_hosts(
                 pjNetgui+i, IPv4=False, IPv6=True)
-
             if node_hosts_ipv6 != None:
                 changes_detect |= add_environment(
-                    project, nodes[i].index, "IPv6_Hosts=True")
+                    project, nodes[i].index, "IPV6_HOSTS=True")
 
             if path.isfile(pjNetgui+i+"/etc/sysctl.conf"):
                 changes_detect |= add_environment(
-                    project, nodes[i].index, "sysctl_conf=True")
+                    project, nodes[i].index, "SYSCTL_CONF=True")
 
             node_hosts_ipv4 = get_etc_hosts(pjNetgui+i)
             if node_hosts_ipv4 != None:
@@ -689,7 +688,7 @@ def convert_files(pjNetgui: str, pjOutput: str, netgui_file: str, nodes: dict = 
 
             if not "/root" in extra_volumes_current_node:
                 extra_volumes_current_node.append("/root")
-            
+
             if project["topology"]["nodes"][nodes[i].index]["properties"]["extra_volumes"] == [] or project["topology"]["nodes"][nodes[i].index]["properties"]["extra_volumes"] == None:
                 project["topology"]["nodes"][nodes[i].index]["properties"]["extra_volumes"] = extra_volumes_current_node
                 changes_detect = True
@@ -718,7 +717,7 @@ def convert_files(pjNetgui: str, pjOutput: str, netgui_file: str, nodes: dict = 
         print("\033[93mNo configuration files found\033[0m")
 
 
-def convert_project(pjNetgui: str, pjOutput: str, nameOutput: str = None, imgDocker: str = None, template_id: str = None, cfgRead: str = None, convertConfig: str = True, convertTopology: bool = True, gns3_version: str = None):
+def convert_project(pjNetgui: str, pjOutput: str, nameOutput: str = None, force: bool = False, imgDocker: str = None, template_id: str = None, cfgRead: str = None, convertConfig: str = True, convertTopology: bool = True, gns3_version: str = None):
     if not path.exists(pjNetgui):
         print(pjNetgui + "\033[91m No such file or directory\033[0m")
         exit(1)
@@ -773,8 +772,9 @@ def convert_project(pjNetgui: str, pjOutput: str, nameOutput: str = None, imgDoc
         if nameOutput == "Netgui project name":
             nameOutput = path.basename(path.dirname(pjNetgui))
 
-        nodes = convert_topology(pjNetgui=pjNetgui, pjOutput=pjOutput, nameOutput=nameOutput,
-                                 imgDocker=imgDocker, template_id=template_id,  cfgRead=cfgRead, netgui_file=netgui_file, gns3_version=gns3_version)
+        nodes = convert_topology(pjNetgui=pjNetgui, pjOutput=pjOutput, nameOutput=nameOutput, force=force,
+                                 imgDocker=imgDocker, template_id=template_id,  cfgRead=cfgRead,
+                                 netgui_file=netgui_file, gns3_version=gns3_version)
         if convertConfig:
             pjOutput += "/"+nameOutput+"/"+nameOutput+".gns3"
 
@@ -793,7 +793,7 @@ if __name__ == '__main__':
         """
         spec = spec_from_file_location(
             "version", glob("/usr/share/gns3/gns3-gui/lib/python*/site-packages/gns3/version.py")[0])
-        
+
         gns3 = module_from_spec(spec)
         spec.loader.exec_module(gns3)
     except FileNotFoundError:
@@ -828,8 +828,8 @@ if __name__ == '__main__':
 
     exclusive_a = parser_a.add_mutually_exclusive_group()
 
-    parser_a.add_argument('-h', '--help', action='help', default=SUPPRESS,
-                          help='show this help message and exit\n ')
+    parser_a.add_argument('-f', '--force', action='store_true',
+                          help='replace the output project if it already exists\n ')
 
     parser_a.add_argument('-i', '--image', type=str, default="srealmoreno/rae:latest",
                           help='    base docker image to use\n\tdefault: %(default)s\n ', metavar='\b')
@@ -837,45 +837,51 @@ if __name__ == '__main__':
     parser_a.add_argument('-n', '--name', type=str, default="Netgui project name",
                           help='    gns3 project name\n\tdefault: %(default)s\n ', metavar='\b')
 
-    exclusive_a.add_argument('-t', '--template', type=str,
-                             help='    specifies the ID of the Docker template.\n ', metavar='\b')
+    parser_a.add_argument('-o', '--output', type=str, default=path.expanduser("~/GNS3/projects/"),
+                          help='    output folder\n\tdefault: %(default)s\n ', metavar='\b')
 
     exclusive_a.add_argument('-r', '--read', type=str, default=path.expanduser("~/.config/GNS3/"+version+"/gns3_controller.conf"),
                              help='    path of GNS3 controller config. The template ID will\nbe searched here in case it is not specified (-t)\n\tdefault: %(default)s\n ', metavar='\b')
 
-    parser_a.add_argument('-o', '--output', type=str, default=path.expanduser("~/GNS3/projects/"),
-                          help='    output folder\n\tdefault: %(default)s', metavar='\b')
+    exclusive_a.add_argument('-t', '--template', type=str,
+                             help='    specifies the ID of the Docker template.\n ', metavar='\b')
+
+    parser_a.add_argument('-h', '--help', action='help', default=SUPPRESS,
+                          help='show this help message and exit\n ')
 
     parser_a.add_argument('netgui_project', type=str,
                           help='netgui project folder to convert')
 
     # create the parser for the "topology" command
-    parser_b = subparsers.add_parser(
-        'topology', help='convert only topology', formatter_class=RawTextHelpFormatter, add_help=False, description='Convert only topology')
+    parser_t = subparsers.add_parser('topology', help='convert only topology', formatter_class=RawTextHelpFormatter,
+                                     add_help=False, description='Convert only topology')
 
-    parser_b._positionals.title = "required argument"
+    parser_t._positionals.title = "required argument"
 
-    exclusive_b = parser_b.add_mutually_exclusive_group()
+    exclusive_t = parser_t.add_mutually_exclusive_group()
 
-    parser_b.add_argument('-h', '--help', action='help', default=SUPPRESS,
-                          help='show this help message and exit\n ')
+    parser_t.add_argument('-f', '--force', action='store_true',
+                          help='replace the output project if it already exists\n ')
 
-    parser_b.add_argument('-i', '--image', type=str, default="srealmoreno/rae:latest",
+    parser_t.add_argument('-i', '--image', type=str, default="srealmoreno/rae:latest",
                           help='    base docker image to use\n\tdefault: %(default)s\n ', metavar='\b')
 
-    parser_b.add_argument('-n', '--name', type=str, default="Netgui project name",
+    parser_t.add_argument('-n', '--name', type=str, default="Netgui project name",
                           help='    gns3 project name\n\tdefault: %(default)s\n ', metavar='\b')
 
-    exclusive_b.add_argument('-t', '--template', type=str,
+    parser_t.add_argument('-o', '--output', type=str, default=path.expanduser("~/GNS3/projects/"),
+                          help='    output folder\n\tdefault: %(default)s\n ', metavar='\b')
+
+    exclusive_t.add_argument('-t', '--template', type=str,
                              help='    specifies the ID of the Docker template.\n ', metavar='\b')
 
-    exclusive_b.add_argument('-r', '--read', type=str, default=path.expanduser("~/.config/GNS3/"+version+"/gns3_controller.conf"),
+    exclusive_t.add_argument('-r', '--read', type=str, default=path.expanduser("~/.config/GNS3/"+version+"/gns3_controller.conf"),
                              help='    path of GNS3 controller config. The template ID will\nbe searched here in case it is not specified (-t)\n\tdefault: %(default)s\n ', metavar='\b')
 
-    parser_b.add_argument('-o', '--output', type=str, default=path.expanduser("~/GNS3/projects/"),
-                          help='    output folder\n\tdefault: %(default)s', metavar='\b')
+    parser_t.add_argument('-h', '--help', action='help', default=SUPPRESS,
+                          help='show this help message and exit')
 
-    parser_b.add_argument('netgui_project', type=str,
+    parser_t.add_argument('netgui_project', type=str,
                           help='netgui project folder to convert')
 
     # create the parser for the "config" command
@@ -894,11 +900,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.command == "all":
-        convert_project(pjNetgui=path.abspath(args.netgui_project),
-                        pjOutput=path.abspath(args.output), nameOutput=args.name, imgDocker=args.image, template_id=args.template, cfgRead=path.abspath(args.read), gns3_version=gns3.__version__)
+        convert_project(pjNetgui=path.abspath(args.netgui_project), pjOutput=path.abspath(args.output),
+                        nameOutput=args.name, force=args.force, imgDocker=args.image, template_id=args.template,
+                        cfgRead=path.abspath(args.read), gns3_version=gns3.__version__)
+
     elif args.command == "topology":
-        convert_project(pjNetgui=path.abspath(args.netgui_project),
-                        pjOutput=path.abspath(args.output), nameOutput=args.name, imgDocker=args.image, template_id=args.template, cfgRead=path.abspath(args.read), convertConfig=False, gns3_version=gns3.__version__)
+        convert_project(pjNetgui=path.abspath(args.netgui_project), pjOutput=path.abspath(args.output),
+                        nameOutput=args.name, force=args.force, imgDocker=args.image, template_id=args.template,
+                        cfgRead=path.abspath(args.read), convertConfig=False, gns3_version=gns3.__version__)
     else:
         convert_project(pjNetgui=path.abspath(args.netgui_project),
                         pjOutput=path.abspath(args.gns3_project), convertTopology=False)

@@ -1,8 +1,8 @@
 Package: ntg
-Version: 1.0.0~all1
+Version: 1.0.0~all
 Architecture: all
 Maintainer: Salvador Real <salvadorreal77@gmail.com>
-Installed-Size: 108
+Installed-Size: 176
 Depends: python3, python3-rstr, jq, gns3-gui, gns3-server
 Homepage: https://srealmoreno.github.io/ntg/
 Priority: optional

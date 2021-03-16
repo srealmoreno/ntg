@@ -1,39 +1,40 @@
 #compdef ntg
 function _ntg_all {
-    
+
     local python_version=$(python3 --version 2>/dev/null | grep -oP ' \K.*' | cut -f1,2 -d '.')
     local gns3_version=$(grep -oP '__version__ = \K.*' "/usr/share/gns3/gns3-gui/lib/python$python_version/site-packages/gns3/version.py" 2>/dev/null | sed 's/"//g' | cut -f1,2 -d '.')
     local sourceconfig=~/".config/GNS3/$gns3_version/gns3_controller.conf"
     local help="-h --help"
-    
+
     _arguments -C \
-       "(: -)"{-h,--help}"[Show help message and exit]" \
-       "($help -i --image)"{-i,--image}"[Base docker image to use]:arg:->image" \
-       "($help -n --name)"{-n,--name}"[Output GNS3 project name]:file:_files" \
-       "($help -t --template -r --read)"{-t,--template}"[Specifies the ID of the Docker template]:arg:->template" \
-       "($help -r --read -t --template)"{-r,--read}"[Path of GNS3 controller config, the template]:file:_files" \
-       "($help -o --output)"{-o,--output}"[Output folder]:directory:_dir_list" \
+       "(: -)"{-h,--help}"[show help message and exit]" \
+       "($help -f --help)"{-f,--force}"[replace the output project if it already exists]" \
+       "($help -i --image)"{-i,--image}"[base docker image to use]:arg:->image" \
+       "($help -n --name)"{-n,--name}"[output GNS3 project name]:file:_files" \
+       "($help -o --output)"{-o,--output}"[output folder]:directory:_dir_list" \
+       "($help -r --read -t --template)"{-r,--read}"[path of GNS3 controller config, the template]:file:_files" \
+       "($help -t --template -r --read)"{-t,--template}"[specifies the ID of the Docker template]:arg:->template" \
        "($help)""1:file:_files -g '*.nkp'"
-   
+
     case $state in
         image)
-           
+
             local i read_config args_gns3_controller matches="^-(r|-read)$"
 
-            for (( i=0; i < ${#words[@]}-1; i++ )); do    
+            for (( i=0; i < ${#words[@]}-1; i++ )); do
                 if [[ ${words[i]} =~ $matches ]]; then
                     args_gns3_controller=${words[$((i+1))]}
                     break
                 fi
             done
-                
-            
-            if [[ -n $args_gns3_controller ]]; then            
+
+
+            if [[ -n $args_gns3_controller ]]; then
                 read_config=${args_gns3_controller//\~/$HOME}
             else
                 read_config=$sourceconfig
             fi
-    
+
 
             local id_and_images=$(jq -r '.templates[] | select(.template_type=="docker")| "\(.image) -- \(.template_id)"'\
                 $read_config  2>/dev/null |\
@@ -48,7 +49,7 @@ function _ntg_all {
             ;;
 
         template)
-            
+
            local id_and_images=$(jq -r '.templates[] | select(.template_type=="docker")| "\(.template_id) -- \(.image)"'\
                 $sourceconfig  2>/dev/null |\
                 sed -r '/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12} -- .+?\/*.+?:.+$/!d')
@@ -58,7 +59,7 @@ function _ntg_all {
                 local description=(${(f)id_and_images})
                 compadd -l -d description -a -- image
             fi
- 
+
             ;;
 
     esac
@@ -67,12 +68,12 @@ function _ntg_all {
 
 function _ntg_config(){
     local help="-h --help"
-    
+
     _arguments -C \
-      "(: -)"{-h,--help}"[Show help message and exit]" \
+      "(: -)"{-h,--help}"[show help message and exit]" \
       "($help)""1:file:_files -g '*.nkp'" \
       "($help)""2:file:_files -g '*.gns3'"
-       
+
 }
 function _ntg_describe_subcomands(){
       local -a _ntg_subcommads
@@ -86,13 +87,13 @@ function _ntg_describe_subcomands(){
 function _ntg {
 
     local help="-h --help"
-     
+
     _arguments -C \
-        "(: -)"{-h,--help}"[Show help message and exit]" \
-        "(: -)"{-v,--version}"[Show program version and exit]" \
+        "(: -)"{-h,--help}"[show help message and exit]" \
+        "(: -)"{-v,--version}"[show program version and exit]" \
         "($help)""1: :_ntg_describe_subcomands" \
         "($help)""*::arg:->args"
-    
+
     case $words[1] in
         all|topology)
             _ntg_all

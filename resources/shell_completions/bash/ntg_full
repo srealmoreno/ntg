@@ -1,49 +1,58 @@
-
 shopt -s extglob progcomp
 
-_upvars()
-{
-    if ! (( $# )); then
+_upvars() {
+    if ! (($#)); then
         echo "bash_completion: $FUNCNAME: usage: $FUNCNAME" \
             "[-v varname value] | [-aN varname [value ...]] ..." >&2
         return 2
     fi
-    while (( $# )); do
+    while (($#)); do
         case $1 in
-            -a*)
-                # Error checking
-                [[ ${1#-a} ]] || { echo "bash_completion: $FUNCNAME:" \
-                    "\`$1': missing number specifier" >&2; return 1; }
-                printf %d "${1#-a}" &>/dev/null || { echo bash_completion: \
+        -a*)
+            # Error checking
+            [[ ${1#-a} ]] || {
+                echo "bash_completion: $FUNCNAME:" \
+                    "\`$1': missing number specifier" >&2
+                return 1
+            }
+            printf %d "${1#-a}" &>/dev/null || {
+                echo bash_completion: \
                     "$FUNCNAME: \`$1': invalid number specifier" >&2
-                    return 1; }
-                # Assign array of -aN elements
-                [[ "$2" ]] && unset -v "$2" && eval $2=\(\"\${@:3:${1#-a}}\"\) &&
-                shift $((${1#-a} + 2)) || { echo bash_completion: \
+                return 1
+            }
+            # Assign array of -aN elements
+            [[ "$2" ]] && unset -v "$2" && eval $2=\(\"\${@:3:${1#-a}}\"\) &&
+                shift $((${1#-a} + 2)) || {
+                echo bash_completion: \
                     "$FUNCNAME: \`$1${2+ }$2': missing argument(s)" \
-                    >&2; return 1; }
-                ;;
-            -v)
-                # Assign single value
-                [[ "$2" ]] && unset -v "$2" && eval $2=\"\$3\" &&
-                shift 3 || { echo "bash_completion: $FUNCNAME: $1:" \
-                    "missing argument(s)" >&2; return 1; }
-                ;;
-            *)
-                echo "bash_completion: $FUNCNAME: $1: invalid option" >&2
-                return 1 ;;
+                    >&2
+                return 1
+            }
+            ;;
+        -v)
+            # Assign single value
+            [[ "$2" ]] && unset -v "$2" && eval $2=\"\$3\" &&
+                shift 3 || {
+                echo "bash_completion: $FUNCNAME: $1:" \
+                    "missing argument(s)" >&2
+                return 1
+            }
+            ;;
+        *)
+            echo "bash_completion: $FUNCNAME: $1: invalid option" >&2
+            return 1
+            ;;
         esac
     done
 }
 
-__reassemble_comp_words_by_ref()
-{
+__reassemble_comp_words_by_ref() {
     local exclude i j line ref
     # Exclude word separator characters?
     if [[ $1 ]]; then
         # Yes, exclude word separator characters;
         # Exclude only those characters, which were really included
-        exclude="${1//[^$COMP_WORDBREAKS]}"
+        exclude="${1//[^$COMP_WORDBREAKS]/}"
     fi
 
     # Default to cword unchanged
@@ -53,7 +62,7 @@ __reassemble_comp_words_by_ref()
         # Yes, list of word completion separators has shrunk;
         line=$COMP_LINE
         # Re-assemble words to complete
-        for (( i=0, j=0; i < ${#COMP_WORDS[@]}; i++, j++)); do
+        for ((i = 0, j = 0; i < ${#COMP_WORDS[@]}; i++, j++)); do
             # Is current word not word 0 (the command itself) and is word not
             # empty and is word made up of just word separator characters to
             # be excluded and is current word not preceded by whitespace in
@@ -62,7 +71,7 @@ __reassemble_comp_words_by_ref()
                 # Is word separator not preceded by whitespace in original line
                 # and are we not going to append to word 0 (the command
                 # itself), then append to current word.
-                [[ $line != [[:blank:]]* ]] && (( j >= 2 )) && ((j--))
+                [[ $line != [[:blank:]]* ]] && ((j >= 2)) && ((j--))
                 # Append word separator to current or new word
                 ref="$2[$j]"
                 printf -v "$ref" %s "${!ref}${COMP_WORDS[i]}"
@@ -75,7 +84,7 @@ __reassemble_comp_words_by_ref()
                 [[ $line == [[:blank:]]* ]] && ((j++))
                 # Indicate next word if available, else end *both* while and
                 # for loop
-                (( $i < ${#COMP_WORDS[@]} - 1)) && ((i++)) || break 2
+                (($i < ${#COMP_WORDS[@]} - 1)) && ((i++)) || break 2
             done
             # Append word to current word
             ref="$2[$j]"
@@ -94,22 +103,22 @@ __reassemble_comp_words_by_ref()
     fi
 }
 
-__get_cword_at_cursor_by_ref()
-{
+__get_cword_at_cursor_by_ref() {
     local cword words=()
     __reassemble_comp_words_by_ref "$1" words cword
 
     local i cur index=$COMP_POINT lead=${COMP_LINE:0:$COMP_POINT}
     # Cursor not at position 0 and not leaded by just space(s)?
-    if [[ $index -gt 0 && ( $lead && ${lead//[[:space:]]} ) ]]; then
+    if [[ $index -gt 0 && ($lead && ${lead//[[:space:]]/}) ]]; then
         cur=$COMP_LINE
-        for (( i = 0; i <= cword; ++i )); do
-            while [[
-                # Current word fits in $cur?
-                ${#cur} -ge ${#words[i]} &&
+        for ((i = 0; i <= cword; ++i)); do
+            while [[ \
+                \
+                ${#cur} -ge ${#words[i]} && \
+                \
+                "${cur:0:${#words[i]}}" != "${words[i]}" ]] \
+                    ; do # Current word fits in $cur?
                 # $cur doesn't match cword?
-                "${cur:0:${#words[i]}}" != "${words[i]}"
-            ]]; do
                 # Strip first character
                 cur="${cur:1}"
                 # Decrease cursor position, staying >= 0
@@ -122,11 +131,11 @@ __get_cword_at_cursor_by_ref()
                 local old_size=${#cur}
                 cur="${cur#"${words[i]}"}"
                 local new_size=${#cur}
-                (( index -= old_size - new_size ))
+                ((index -= old_size - new_size))
             fi
         done
         # Clear $cur if just space(s)
-        [[ $cur && ! ${cur//[[:space:]]} ]] && cur=
+        [[ $cur && ! ${cur//[[:space:]]/} ]] && cur=
         # Zero $index if negative
         [[ $index -lt 0 ]] && index=0
     fi
@@ -135,67 +144,81 @@ __get_cword_at_cursor_by_ref()
         -v $3 "$cword" -v $4 "${cur:0:$index}"
 }
 
-_get_comp_words_by_ref()
-{
+_get_comp_words_by_ref() {
     local exclude flag i OPTIND=1
     local cur cword words=()
     local upargs=() upvars=() vcur vcword vprev vwords
 
     while getopts "c:i:n:p:w:" flag "$@"; do
         case $flag in
-            c) vcur=$OPTARG ;;
-            i) vcword=$OPTARG ;;
-            n) exclude=$OPTARG ;;
-            p) vprev=$OPTARG ;;
-            w) vwords=$OPTARG ;;
+        c) vcur=$OPTARG ;;
+        i) vcword=$OPTARG ;;
+        n) exclude=$OPTARG ;;
+        p) vprev=$OPTARG ;;
+        w) vwords=$OPTARG ;;
         esac
     done
     while [[ $# -ge $OPTIND ]]; do
         case ${!OPTIND} in
-            cur)   vcur=cur ;;
-            prev)  vprev=prev ;;
-            cword) vcword=cword ;;
-            words) vwords=words ;;
-            *) echo "bash_completion: $FUNCNAME: \`${!OPTIND}':" \
-                "unknown argument" >&2; return 1 ;;
+        cur) vcur=cur ;;
+        prev) vprev=prev ;;
+        cword) vcword=cword ;;
+        words) vwords=words ;;
+        *)
+            echo "bash_completion: $FUNCNAME: \`${!OPTIND}':" \
+                "unknown argument" >&2
+            return 1
+            ;;
         esac
-        (( OPTIND += 1 ))
+        ((OPTIND += 1))
     done
 
     __get_cword_at_cursor_by_ref "$exclude" words cword cur
 
-    [[ $vcur   ]] && { upvars+=("$vcur"  ); upargs+=(-v $vcur   "$cur"  ); }
-    [[ $vcword ]] && { upvars+=("$vcword"); upargs+=(-v $vcword "$cword"); }
-    [[ $vprev && $cword -ge 1 ]] && { upvars+=("$vprev" ); upargs+=(-v $vprev
-        "${words[cword - 1]}"); }
-    [[ $vwords ]] && { upvars+=("$vwords"); upargs+=(-a${#words[@]} $vwords
-        "${words[@]}"); }
+    [[ $vcur ]] && {
+        upvars+=("$vcur")
+        upargs+=(-v $vcur "$cur")
+    }
+    [[ $vcword ]] && {
+        upvars+=("$vcword")
+        upargs+=(-v $vcword "$cword")
+    }
+    [[ $vprev && $cword -ge 1 ]] && {
+        upvars+=("$vprev")
+        upargs+=(-v $vprev
+            "${words[cword - 1]}")
+    }
+    [[ $vwords ]] && {
+        upvars+=("$vwords")
+        upargs+=(-a${#words[@]} $vwords
+            "${words[@]}")
+    }
 
-    (( ${#upvars[@]} )) && local "${upvars[@]}" && _upvars "${upargs[@]}"
+    ((${#upvars[@]})) && local "${upvars[@]}" && _upvars "${upargs[@]}"
 }
 
-_get_cword()
-{
+_get_cword() {
     local LC_CTYPE=C
     local cword words
     __reassemble_comp_words_by_ref "$1" words cword
 
     # return previous word offset by $2
     if [[ ${2//[^0-9]/} ]]; then
-        printf "%s" "${words[cword-$2]}"
+        printf "%s" "${words[cword - $2]}"
     elif [[ "${#words[cword]}" -eq 0 || "$COMP_POINT" == "${#COMP_LINE}" ]]; then
         printf "%s" "${words[cword]}"
     else
         local i
         local cur="$COMP_LINE"
         local index="$COMP_POINT"
-        for (( i = 0; i <= cword; ++i )); do
-            while [[
-                # Current word fits in $cur?
-                "${#cur}" -ge ${#words[i]} &&
+        for ((i = 0; i <= cword; ++i)); do
+            while [[ \
+                \
+                "${#cur}" -ge ${#words[i]} && \
+                \
+                "${cur:0:${#words[i]}}" != "${words[i]}" ]] \
+                    ; do # Current word fits in $cur?
                 # $cur doesn't match cword?
-                "${cur:0:${#words[i]}}" != "${words[i]}"
-            ]]; do
                 # Strip first character
                 cur="${cur:1}"
                 # Decrease cursor position, staying >= 0
@@ -208,7 +231,7 @@ _get_cword()
                 local old_size="${#cur}"
                 cur="${cur#${words[i]}}"
                 local new_size="${#cur}"
-                (( index -= old_size - new_size ))
+                ((index -= old_size - new_size))
             fi
         done
 
@@ -222,8 +245,7 @@ _get_cword()
     fi
 }
 
-_quote_readline_by_ref()
-{
+_quote_readline_by_ref() {
     if [ -z "$1" ]; then
         # avoid quoting if empty
         printf -v $2 %s "$1"
@@ -243,8 +265,7 @@ _quote_readline_by_ref()
     [[ ${!2} == \$* ]] && eval $2=${!2}
 }
 
-_filedir()
-{
+_filedir() {
     local IFS=$'\n'
 
     _tilde "$cur" || return
@@ -252,9 +273,12 @@ _filedir()
     local -a toks
     local x reset
 
-    reset=$(shopt -po noglob); set -o noglob
-    toks=( $(compgen -d -- "$cur") )
-    IFS=' '; $reset; IFS=$'\n'
+    reset=$(shopt -po noglob)
+    set -o noglob
+    toks=($(compgen -d -- "$cur"))
+    IFS=' '
+    $reset
+    IFS=$'\n'
 
     if [[ "$1" != -d ]]; then
         local quoted
@@ -263,95 +287,124 @@ _filedir()
         # Munge xspec to contain uppercase version too
         # http://thread.gmane.org/gmane.comp.shells.bash.bugs/15294/focus=15306
         local xspec=${1:+"!*.@($1|${1^^})"}
-        reset=$(shopt -po noglob); set -o noglob
-        toks+=( $(compgen -f -X "$xspec" -- $quoted) )
-        IFS=' '; $reset; IFS=$'\n'
+        reset=$(shopt -po noglob)
+        set -o noglob
+        toks+=($(compgen -f -X "$xspec" -- $quoted))
+        IFS=' '
+        $reset
+        IFS=$'\n'
 
         # Try without filter if it failed to produce anything and configured to
         [[ -n ${COMP_FILEDIR_FALLBACK:-} && -n "$1" && ${#toks[@]} -lt 1 ]] && {
-            reset=$(shopt -po noglob); set -o noglob
-            toks+=( $(compgen -f -- $quoted) )
-            IFS=' '; $reset; IFS=$'\n'
+            reset=$(shopt -po noglob)
+            set -o noglob
+            toks+=($(compgen -f -- $quoted))
+            IFS=' '
+            $reset
+            IFS=$'\n'
         }
     fi
 
     if [[ ${#toks[@]} -ne 0 ]]; then
         # 2>/dev/null for direct invocation, e.g. in the _filedir unit test
         compopt -o filenames 2>/dev/null
-        COMPREPLY+=( "${toks[@]}" )
+        COMPREPLY+=("${toks[@]}")
     fi
 }
 
-
-_variables()
-{
+_variables() {
     if [[ $cur =~ ^(\$(\{[!#]?)?)([A-Za-z0-9_]*)$ ]]; then
         # Completing $var / ${var / ${!var / ${#var
         if [[ $cur == \${* ]]; then
             local arrs vars
-            vars=( $(compgen -A variable -P ${BASH_REMATCH[1]} -S '}' -- ${BASH_REMATCH[3]}) ) && \
-            arrs=( $(compgen -A arrayvar -P ${BASH_REMATCH[1]} -S '[' -- ${BASH_REMATCH[3]}) )
+            vars=($(compgen -A variable -P ${BASH_REMATCH[1]} -S '}' -- ${BASH_REMATCH[3]})) &&
+                arrs=($(compgen -A arrayvar -P ${BASH_REMATCH[1]} -S '[' -- ${BASH_REMATCH[3]}))
             if [[ ${#vars[@]} -eq 1 && $arrs ]]; then
                 # Complete ${arr with ${array[ if there is only one match, and that match is an array variable
                 compopt -o nospace
-                COMPREPLY+=( ${arrs[*]} )
+                COMPREPLY+=(${arrs[*]})
             else
                 # Complete ${var with ${variable}
-                COMPREPLY+=( ${vars[*]} )
+                COMPREPLY+=(${vars[*]})
             fi
         else
             # Complete $var with $variable
-            COMPREPLY+=( $(compgen -A variable -P '$' -- "${BASH_REMATCH[3]}") )
+            COMPREPLY+=($(compgen -A variable -P '$' -- "${BASH_REMATCH[3]}"))
         fi
         return 0
     elif [[ $cur =~ ^(\$\{[#!]?)([A-Za-z0-9_]*)\[([^]]*)$ ]]; then
         # Complete ${array[i with ${array[idx]}
         local IFS=$'\n'
-        COMPREPLY+=( $(compgen -W '$(printf %s\\n "${!'${BASH_REMATCH[2]}'[@]}")' \
-            -P "${BASH_REMATCH[1]}${BASH_REMATCH[2]}[" -S ']}' -- "${BASH_REMATCH[3]}") )
+        COMPREPLY+=($(compgen -W '$(printf %s\\n "${!'${BASH_REMATCH[2]}'[@]}")' \
+            -P "${BASH_REMATCH[1]}${BASH_REMATCH[2]}[" -S ']}' -- "${BASH_REMATCH[3]}"))
         # Complete ${arr[@ and ${arr[*
         if [[ ${BASH_REMATCH[3]} == [@*] ]]; then
-            COMPREPLY+=( "${BASH_REMATCH[1]}${BASH_REMATCH[2]}[${BASH_REMATCH[3]}]}" )
+            COMPREPLY+=("${BASH_REMATCH[1]}${BASH_REMATCH[2]}[${BASH_REMATCH[3]}]}")
         fi
-        __ltrim_colon_completions "$cur"    # array indexes may have colons
+        __ltrim_colon_completions "$cur" # array indexes may have colons
         return 0
     elif [[ $cur =~ ^\$\{[#!]?[A-Za-z0-9_]*\[.*\]$ ]]; then
         # Complete ${array[idx] with ${array[idx]}
-        COMPREPLY+=( "$cur}" )
+        COMPREPLY+=("$cur}")
         __ltrim_colon_completions "$cur"
         return 0
     else
         case $prev in
-            TZ)
-                cur=/usr/share/zoneinfo/$cur
-                _filedir
-                for i in "${!COMPREPLY[@]}"; do
-                    if [[ ${COMPREPLY[i]} == *.tab ]]; then
-                        unset 'COMPREPLY[i]'
-                        continue
-                    elif [[ -d ${COMPREPLY[i]} ]]; then
-                        COMPREPLY[i]+=/
-                        compopt -o nospace
-                    fi
-                    COMPREPLY[i]=${COMPREPLY[i]#/usr/share/zoneinfo/}
-                done
-                return 0
-                ;;
+        TZ)
+            cur=/usr/share/zoneinfo/$cur
+            _filedir
+            for i in "${!COMPREPLY[@]}"; do
+                if [[ ${COMPREPLY[i]} == *.tab ]]; then
+                    unset 'COMPREPLY[i]'
+                    continue
+                elif [[ -d ${COMPREPLY[i]} ]]; then
+                    COMPREPLY[i]+=/
+                    compopt -o nospace
+                fi
+                COMPREPLY[i]=${COMPREPLY[i]#/usr/share/zoneinfo/}
+            done
+            return 0
+            ;;
         esac
     fi
     return 1
 }
 
-_init_completion()
-{
+__ltrim_colon_completions() {
+    if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
+        # Remove colon-word prefix from COMPREPLY items
+        local colon_word=${1%"${1##*:}"}
+        local i=${#COMPREPLY[*]}
+        while [[ $((--i)) -ge 0 ]]; do
+            COMPREPLY[$i]=${COMPREPLY[$i]#"$colon_word"}
+        done
+    fi
+}
+
+_split_longopt() {
+    if [[ "$cur" == --?*=* ]]; then
+        # Cut also backslash before '=' in case it ended up there
+        # for some reason.
+        prev="${cur%%?(\\)=*}"
+        cur="${cur#*=}"
+        return 0
+    fi
+
+    return 1
+}
+
+_init_completion() {
     local exclude="" flag outx errx inx OPTIND=1
     while getopts "n:e:o:i:s" flag "$@"; do
         case $flag in
-            n) exclude+=$OPTARG ;;
-            e) errx=$OPTARG ;;
-            o) outx=$OPTARG ;;
-            i) inx=$OPTARG ;;
-            s) split=false ; exclude+== ;;
+        n) exclude+=$OPTARG ;;
+        e) errx=$OPTARG ;;
+        o) outx=$OPTARG ;;
+        i) inx=$OPTARG ;;
+        s)
+            split=false
+            exclude+==
+            ;;
         esac
     done
 
@@ -368,22 +421,21 @@ _init_completion()
     # Complete variable names.
     _variables && return 1
 
-
     # Complete on files if current is a redirect possibly followed by a
     # filename, e.g. ">foo", or previous is a "bare" redirect, e.g. ">".
     if [[ $cur == $redir* || $prev == $redir ]]; then
         local xspec
         case $cur in
+        2'>'*) xspec=$errx ;;
+        *'>'*) xspec=$outx ;;
+        *'<'*) xspec=$inx ;;
+        *)
+            case $prev in
             2'>'*) xspec=$errx ;;
             *'>'*) xspec=$outx ;;
             *'<'*) xspec=$inx ;;
-            *)
-                case $prev in
-                    2'>'*) xspec=$errx ;;
-                    *'>'*) xspec=$outx ;;
-                    *'<'*) xspec=$inx ;;
-                esac
-                ;;
+            esac
+            ;;
         esac
         cur="${cur##$redir}"
         _filedir $xspec
@@ -392,32 +444,31 @@ _init_completion()
 
     # Remove all redirections so completions don't have to deal with them.
     local i skip
-    for (( i=1; i < ${#words[@]}; )); do
+    for ((i = 1; i < ${#words[@]}; )); do
         if [[ ${words[i]} == $redir* ]]; then
             # If "bare" redirect, remove also the next word (skip=2).
             [[ ${words[i]} == $redir ]] && skip=2 || skip=1
-            words=( "${words[@]:0:i}" "${words[@]:i+skip}" )
-            [[ $i -le $cword ]] && (( cword -= skip ))
+            words=("${words[@]:0:i}" "${words[@]:i+skip}")
+            [[ $i -le $cword ]] && ((cword -= skip))
         else
-            (( i++ ))
+            ((i++))
         fi
     done
 
     [[ $cword -le 0 ]] && return 1
 
-    prev=${words[cword-1]}
+    prev=${words[cword - 1]}
 
     [[ ${split-} ]] && _split_longopt && split=true
 
     return 0
 }
 
-_tilde()
-{
+_tilde() {
     local result=0
     if [[ $1 == \~* && $1 != */* ]]; then
         # Try generate ~username completions
-        COMPREPLY=( $(compgen -P '~' -u -- "${1#\~}") )
+        COMPREPLY=($(compgen -P '~' -u -- "${1#\~}"))
         result=${#COMPREPLY[@]}
         # 2>/dev/null for direct invocation, e.g. in the _tilde unit test
         [[ $result -gt 0 ]] && compopt -o filenames 2>/dev/null
@@ -425,17 +476,17 @@ _tilde()
     return $result
 }
 
-
 #########################################################
 shopt -s extglob progcomp
-_ntg()
-{
 
+_ntg() {
     local cur prev words cword
-    _init_completion || return
+    _init_completion -n : || return
 
-    local python_version=$(python3 --version 2>/dev/null | /usr/bin/grep -oP ' \K.*' | /usr/bin/cut -f1,2 -d '.')
-    local gns3_version=$(/usr/bin/grep -oP '__version__ = \K.*' "/usr/share/gns3/gns3-gui/lib/python$python_version/site-packages/gns3/version.py" 2>/dev/null | /usr/bin/sed 's/"//g' | /usr/bin/cut -f1,2 -d '.')
+    #_get_comp_words_by_ref -n : cur prev words
+
+    local python_version=$(python3 --version 2>/dev/null | grep -oP ' \K.*' | cut -f1,2 -d '.')
+    local gns3_version=$(grep -oP '__version__ = \K.*' "/usr/share/gns3/gns3-gui/lib/python$python_version/site-packages/gns3/version.py" 2>/dev/null | sed 's/"//g' | cut -f1,2 -d '.')
     local sourceconfig=~/".config/GNS3/$gns3_version/gns3_controller.conf" command=${words[1]}
 
     local GENERIC_OPTIONS='
@@ -444,10 +495,10 @@ _ntg()
 
     # see if the user selected a command already
     local COMMANDS=(
-        "all"
-        "topology"
-        "config"
-        )
+        'all'
+        'topology'
+        'config'
+    )
 
     local matches=" (-h|--help|-v|--version) "
 
@@ -458,52 +509,55 @@ _ntg()
     # supported options per command
     if [[ "$cur" == -* ]] && [[ -n $command ]]; then
         case $command in
-            all|topology)
+        all | topology)
 
-                local reply=''
+            local reply=''
 
-                local matches=" -(i|-image) "
-                if [[ ! ${words[@]} =~ $matches ]]; then
-                    reply="-i --image"
-                fi
+            local matches=" -(f|-force) "
+            if [[ ! ${words[@]} =~ $matches ]]; then
+                reply="-f --force"
+            fi
 
-                local matches=" -(n|-name) "
-                if [[ ! ${words[@]} =~ $matches ]]; then
-                    reply="$reply -n --name"
-                fi
+            local matches=" -(i|-image) "
+            if [[ ! ${words[@]} =~ $matches ]]; then
+                reply="$reply -i --image"
+            fi
 
-                local matches=" -(t|-template|r|-read) "
-                if [[ ! ${words[@]} =~ $matches ]]; then
-                    reply="$reply -t --template"
-                fi
+            local matches=" -(n|-name) "
+            if [[ ! ${words[@]} =~ $matches ]]; then
+                reply="$reply -n --name"
+            fi
 
-                local matches=" -(r|-read|t|-template) "
-                if [[ ! ${words[@]} =~ $matches ]]; then
-                    reply="$reply -r --read"
-                fi
+            local matches=" -(o|-output) "
+            if [[ ! ${words[@]} =~ $matches ]]; then
+                reply="$reply -o --output"
+            fi
 
-                local matches=" -(o|-output) "
-                if [[ ! ${words[@]} =~ $matches ]]; then
-                    reply="$reply -o --output"
-                fi
+            local matches=" -(r|-read|t|-template) "
+            if [[ ! ${words[@]} =~ $matches ]]; then
+                reply="$reply -r --read"
+            fi
 
-                if [[ $cword == 2 ]]; then
-                    reply="$reply $GENERIC_OPTIONS"
-                fi
+            local matches=" -(t|-template|r|-read) "
+            if [[ ! ${words[@]} =~ $matches ]]; then
+                reply="$reply -t --template"
+            fi
 
-                COMPREPLY=( $( compgen -W '
-                  $reply' -- "$cur" ) )
+            if [[ $cword == 2 ]]; then
+                reply="$reply $GENERIC_OPTIONS"
+            fi
+
+            COMPREPLY=($(compgen -W '$reply' -- "$cur"))
+            return 0
+            ;;
+
+        config)
+
+            if [[ $cword == 2 ]]; then
+                COMPREPLY=($(compgen -W '$GENERIC_OPTIONS' -- "$cur"))
                 return 0
-                ;;
-
-            config)
-
-                if [[ $cword == 2 ]]; then
-                    COMPREPLY=( $( compgen -W '
-                    '"$GENERIC_OPTIONS" -- "$cur" ) )
-                fi
-                return 0
-                ;;
+            fi
+            ;;
         esac
     fi
 
@@ -512,96 +566,136 @@ _ntg()
 
     if [[ -n $prev ]] && [[ -n $command ]] && [[ $command =~ $matches ]]; then
         case $prev in
-            --image|-!(-*)i)
+        --image | -!(-*)i)
 
-                local i read_config args_gns3_controller matches="^-(r|-read)$"
+            local i read_config args_gns3_controller matches="^-(r|-read)$"
 
-                for (( i=1; i < ${#words[@]}-1; i++ )); do
-                    if [[ ${words[i]} =~ $matches ]]; then
-                        args_gns3_controller=${words[$((i+1))]}
-                        break
-                    fi
-                done
-
-                if [[ -n $args_gns3_controller ]]; then
-                    read_config=${args_gns3_controller//\~/$HOME}
-                else
-                    read_config=$sourceconfig
+            for ((i = 1; i < ${#words[@]} - 1; i++)); do
+                if [[ ${words[i]} =~ $matches ]]; then
+                    args_gns3_controller=${words[$((i + 1))]}
+                    break
                 fi
+            done
 
-                local images=$(/usr/bin/jq -r '.templates[] | select(.template_type=="docker") | .image' $read_config  2>/dev/null |\
-                    /usr/bin/sed -r '/^.+?\/*.+?:.+$/!d')
+            if [[ -n $args_gns3_controller ]]; then
+                read_config=${args_gns3_controller//\~/$HOME}
+            else
+                read_config=$sourceconfig
+            fi
 
-                if [[ -n $images ]] && [[ $images != "null" ]]; then
-                    COMPREPLY=( $( compgen -W '
-                        $images' -- "$cur" ) )
-                fi
-                return 0
-                ;;
+            local images=$(jq -r '.templates[] | select(.template_type=="docker") | .image' $read_config 2>/dev/null |
+                sed -r '/^.+?\/*.+?:.+$/!d')
 
-            --name|--read|-!(-*)[nr])
-                _filedir
-                return 0
-                ;;
+            if [[ -n $images ]] && [[ $images != "null" ]]; then
+                COMPREPLY=($(compgen -W '$images' -- "$cur"))
+                __ltrim_colon_completions "$cur"
+            fi
+            return 0
+            ;;
 
-            --template|-!(-*)t)
+        --name | --read | -!(-*)[nr])
+            _filedir
+            return 0
+            ;;
 
-               local template_id=$(/usr/bin/jq -r '.templates[] | select(.template_type=="docker") | .template_id' $sourceconfig  2>/dev/null |\
-                    /usr/bin/sed -r '/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/!d'  )
+        --template | -!(-*)t)
 
-                if [[ -n $template_id ]] && [[ $template_id != "null" ]]; then
-                    COMPREPLY=( $( compgen -W '
-                        $template_id' -- "$cur" ) )
+            local template_id=$(jq -r '.templates[] | select(.template_type=="docker") | .template_id' $sourceconfig 2>/dev/null |
+                sed -r '/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/!d')
 
-                fi
+            if [[ -n $template_id ]] && [[ $template_id != "null" ]]; then
+                COMPREPLY=($(compgen -W '$template_id' -- "$cur"))
+            fi
 
-                return 0
-                ;;
+            return 0
+            ;;
 
-            -o|--output)
-                _filedir -d
+        -o | --output)
+            _filedir -d
             return 0
             ;;
         esac
     fi
 
-
     # specific command arguments
     if [[ -n $command ]]; then
         case $command in
-            all|topology)
-                if [[ $((cword % 2)) == 0 ]]; then
-                    _filedir "nkp"
-                fi
+        all | topology)
+            local position=2
+            local reply=''
 
-                return 0
-                ;;
-            config)
+            local matches=" -(f|-force) "
+            if [[ ${words[@]} =~ $matches ]]; then
+                ((position++))
+            else
+                reply='- --'
+            fi
 
-                if [[ $cword == 2 ]]; then
-                    _filedir "nkp"
-                fi
-                
-                if [[ $cword == 3  ]]; then
-                    _filedir "gns3"
-                fi
-                
+            local matches=" -(i|-image) "
+            if [[ ${words[@]} =~ $matches ]]; then
+                ((position += 2))
+            else
+                reply='- --'
+            fi
+
+            local matches=" -(n|-name) "
+            if [[ ${words[@]} =~ $matches ]]; then
+                ((position += 2))
+
+            else
+                reply='- --'
+            fi
+
+            local matches=" -(o|-output) "
+            if [[ ${words[@]} =~ $matches ]]; then
+                ((position += 2))
+            else
+                reply='- --'
+            fi
+
+            local matches=" -(t|-template|r|-read) "
+            if [[ ${words[@]} =~ $matches ]]; then
+                ((position += 2))
+
+            else
+                reply='- --'
+            fi
+
+            if [[ $cword == $position ]]; then
+                _filedir "nkp"
                 return 0
-                ;;
+            elif [[ -n $reply ]]; then
+                COMPREPLY=($(compgen -W '$reply' -- "$cur"))
+            fi
+
+            ;;
+        config)
+
+            if [[ $cword == 2 ]]; then
+                _filedir "nkp"
+                return 0
+            fi
+
+            if [[ $cword == 3 ]]; then
+                _filedir "gns3"
+                return 0
+            fi
+            ;;
         esac
 
     fi
 
     local matches="\b(all|topology|config)\b|-"
     # no command yet, show what commands we have
-    if [[ "$cur" != -* ]] && [[ $cword == 1 ]]; then
-        COMPREPLY=( $( compgen -W '${COMMANDS[@]}' -- "$cur" ) )
+    if [[ "$cur" != -* ]]; then
+        if [[ $cword == 1 ]]; then
+            COMPREPLY=($(compgen -W '${COMMANDS[@]}' -- "$cur"))
+        fi
     elif [[ $command =~ $matches ]]; then
-        COMPREPLY=( $( compgen -W '-v --version${GENERIC_OPTIONS}' -- "$cur" ) )
+        COMPREPLY=($(compgen -W '-v --version${GENERIC_OPTIONS}' -- "$cur"))
     fi
 
     return 0
-} &&
-complete -F _ntg ntg
+} && complete -F _ntg ntg
 
 # ex: ts=4 sw=5 et filetype=sh

@@ -23,9 +23,9 @@ if [[ $# == 0 ]]; then
 
     _auto_complete(){
         if [[ "$?" == "0" ]]; then
-            export PS1="\[\033[01;32m\]»\[\033[00m\]"
+            export PS1="\r\[\033[01;32m\]»\[\033[00m\]"
         else
-            export PS1="\[\033[01;31m\]»\[\033[00m\]"
+            export PS1="\r\[\033[01;31m\]»\[\033[00m\]"
         fi
         printf "\e[5n"
     }
@@ -39,7 +39,7 @@ if [[ $# == 0 ]]; then
 else
     cd ${1%/*}
     name="${1##*/}"
-    echo -e "\033[01;31m»\033[0mntg all $name --output .\n\t"
+    echo -e "\033[01;32m»\033[0mntg all $name --output .\n\t"
     ntg all "$name" -o .
     if [[ "$?" != "0" ]]; then
         echo -e "\033[01;31m"
