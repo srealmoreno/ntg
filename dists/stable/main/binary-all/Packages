@@ -7,11 +7,11 @@ Maintainer: Salvador Real <salvadorreal77@gmail.com>
 Installed-Size: 176
 Depends: python3, python3-rstr, jq, gns3-gui, gns3-server
 Filename: ./dists/stable/pool/stable/all/ntg_1.0.0~all_all.deb
-Size: 19444
-MD5sum: a2d2f1f4aa33ed9f4199d8a84c3d4733
-SHA1: 758384a5fdb159c6f0ca3cf37a36570651dafe9b
-SHA256: 7b18b282506e02c1eeb99c9c10525d9f5feb2b5903232ca1e13e83805a66506e
-SHA512: 2c2efa7d3c76ff0c18634a9546663f7ad55fef18683b56f8d9d8a5ff75cd30efeabef70127efb5a7a615180b11b75eb83defee99d87b0fb6f030cb499e85eca2
+Size: 19448
+MD5sum: b4f8ed8347c5b8632665d1073b174ba0
+SHA1: 7775a5289c52cf00ccbc2077805188290ab52e32
+SHA256: e9660f469b91fc19705a62bf6bc18ba20387e4582be78b877e3e2b1a7554627c
+SHA512: 57e71bf86e245550953619a20155850228690067100c95960d7363002de5e00b6a4a5c9049d5133a48fbd713dc10600f15869029c4c32bf0b1f2347f8765d395
 Homepage: https://srealmoreno.github.io/ntg/
 Description: Convert Topology Netgui to GNS3 with Docker
  With this script you can convert netgui projects (.nkp) to
